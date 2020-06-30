@@ -1,59 +1,71 @@
 package bytes.sync.scheduler;
 
 
+import bytes.sync.repository.SchedulerWrapperRepository;
 import bytes.sync.errors.SchedulerObjectNotFound;
-import bytes.sync.model.SchedulerWrapper;
-import bytes.sync.repository.InMemoryCrudRepository;
+import bytes.sync.domain.SchedulerWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 public class SchedulerAPI {
 
     @Autowired
-    private InMemoryCrudRepository crudRepository;
+    private SchedulerWrapperRepository repository;
 
     @GetMapping(path = "/schedulers", produces = MediaType.APPLICATION_JSON_VALUE)
-    public List<SchedulerWrapper> getAllScheduledObjects() {
-        return crudRepository.findAllSchedulerObjects();
+    public ResponseEntity<List<SchedulerWrapper>> getAllScheduledObjects() {
+        try {
+            List<SchedulerWrapper> list = repository.findAll();
+            return ResponseEntity.ok().body(list);
+        } catch (Exception e) {
+            throw e;
+        }
     }
 
     @GetMapping(path = "/scheduler/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public SchedulerWrapper getScheduledObjectById(@PathVariable("id") String id) {
-        SchedulerWrapper wrapper = crudRepository.findSchedulerObjectById(id);
-        if(wrapper == null) {
+    public ResponseEntity<SchedulerWrapper> getScheduledObjectById(@PathVariable("id") String id) {
+        Optional<SchedulerWrapper> wrapper = repository.findById(id);
+        if(!wrapper.isPresent()) {
             throw new SchedulerObjectNotFound("id: " + id);
         }
-        return wrapper;
+        return ResponseEntity.ok().body(wrapper.get());
     }
 
     @PostMapping(path = "/scheduler", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity createNewSchedulerObject(@RequestBody SchedulerWrapper schedulerWrapper) {
-        if(!crudRepository.saveNewSchedulerObject(schedulerWrapper)) {
-            return ResponseEntity.ok(HttpStatus.INTERNAL_SERVER_ERROR);
+    public ResponseEntity<SchedulerWrapper> createNewSchedulerObject(@RequestBody SchedulerWrapper schedulerWrapper) {
+        try {
+            SchedulerWrapper wrapper = repository.save(schedulerWrapper);
+            return ResponseEntity.ok().body(wrapper);
+        } catch (Exception e) {
+            throw e;
         }
-        return ResponseEntity.ok(HttpStatus.CREATED);
     }
 
     @PutMapping(path = "/scheduler/{id}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity updateScheduledObjectById(@PathVariable("id") String id, @RequestBody SchedulerWrapper schedulerWrapper) {
-        if(!crudRepository.updateSchedulerObjectById(id, schedulerWrapper)) {
+    public ResponseEntity<SchedulerWrapper> updateScheduledObjectById(@PathVariable("id") String id, @RequestBody SchedulerWrapper schedulerWrapper) {
+        try {
+            schedulerWrapper.setId(id);
+            SchedulerWrapper wrapper = repository.save(schedulerWrapper);
+            return ResponseEntity.ok().body(wrapper);
+        } catch (Exception e) {
             throw new SchedulerObjectNotFound("id: " + id);
         }
-        return ResponseEntity.ok(HttpStatus.NO_CONTENT);
     }
 
     @DeleteMapping(path = "/scheduler/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity deleteSchedulerObjectById(@PathVariable("id") String id) {
-        if(!crudRepository.deleteSchedulerObjectById(id)) {
+    public ResponseEntity<SchedulerWrapper> deleteSchedulerObjectById(@PathVariable("id") String id) {
+        try {
+            repository.deleteById(id);
+        } catch (Exception e) {
             throw new SchedulerObjectNotFound("id: " + id);
         }
-        return ResponseEntity.ok(HttpStatus.NO_CONTENT);
+        return ResponseEntity.noContent().build();
     }
 
 }

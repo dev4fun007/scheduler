@@ -1,21 +1,37 @@
-package bytes.sync.model;
+package bytes.sync.domain;
 
-import java.util.Date;
+import org.hibernate.annotations.GenericGenerator;
 
-public class SchedulerWrapper {
+import javax.persistence.*;
+import java.io.Serializable;
+import java.sql.Date;
 
-    String id;
-    String jobClass;
-    String jobGroup;
-    String jobName;
-    String triggerExpression;
-    String cronExpression;
-    String startTime;
-    String addedBy;
-    String addedOn;
-    Boolean active;
-    String activationExpression;
-    String rowSecurity;
+
+@Entity
+@Table(name = "ScheduledObject")
+public class SchedulerWrapper implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
+    @Id
+    @GeneratedValue(generator = "UUID")
+    @GenericGenerator(
+            name = "UUID",
+            strategy = "org.hibernate.id.UUIDGenerator"
+    )
+    private String id;
+
+    private String jobClass;
+    private String jobGroup;
+    private String jobName;
+    private String triggerExpression;
+    private String cronExpression;
+    private Date startTime;
+    private String addedBy;
+    private Date addedOn;
+    private Boolean active;
+    private String activationExpression;
+    private String rowSecurity;
 
     public String getId() {
         return id;
@@ -65,11 +81,11 @@ public class SchedulerWrapper {
         this.cronExpression = cronExpression;
     }
 
-    public String getStartTime() {
+    public Date getStartTime() {
         return startTime;
     }
 
-    public void setStartTime(String startTime) {
+    public void setStartTime(Date startTime) {
         this.startTime = startTime;
     }
 
@@ -81,11 +97,11 @@ public class SchedulerWrapper {
         this.addedBy = addedBy;
     }
 
-    public String getAddedOn() {
+    public Date getAddedOn() {
         return addedOn;
     }
 
-    public void setAddedOn(String addedOn) {
+    public void setAddedOn(Date addedOn) {
         this.addedOn = addedOn;
     }
 
