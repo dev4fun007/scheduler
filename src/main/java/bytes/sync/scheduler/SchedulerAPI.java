@@ -19,9 +19,14 @@ public class SchedulerAPI {
     private SchedulerWrapperRepository repository;
 
     @GetMapping(path = "/schedulers", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<List<SchedulerWrapper>> getAllScheduledObjects() {
+    public ResponseEntity<List<SchedulerWrapper>> getAllScheduledObjects(@RequestParam(name = "active", required = false) boolean active) {
         try {
-            List<SchedulerWrapper> list = repository.findAll();
+            List<SchedulerWrapper> list = null;
+            if(!active) {
+                list = repository.findAll();
+            } else {
+                list = repository.findByActiveTrue();
+            }
             return ResponseEntity.ok().body(list);
         } catch (Exception e) {
             throw e;

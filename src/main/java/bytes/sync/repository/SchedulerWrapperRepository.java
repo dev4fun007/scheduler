@@ -10,4 +10,5 @@ import java.util.List;
 public interface SchedulerWrapperRepository extends JpaRepository<SchedulerWrapper, String> {
     @Override
     List<SchedulerWrapper> findAll();
+    List<SchedulerWrapper> findByActiveTrue();
 }
