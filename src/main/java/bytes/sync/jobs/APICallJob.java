@@ -17,7 +17,8 @@ public class APICallJob extends QuartzJobBean {
         System.out.println("CronJob Start................");
 
         //Make api call to a different service
-        String url = "http://localhost:8081/ping";
+        String url = "https://ping-postgresql.herokuapp.com:8081/ping";
+//        String url = "http://localhost:8081/ping";
 
         Random random = new Random();
         String jsonData = "{\"name\":\"ping_"+ random.nextInt(100) + "\"}";

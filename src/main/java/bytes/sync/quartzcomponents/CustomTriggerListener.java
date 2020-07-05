@@ -6,9 +6,11 @@ import org.quartz.JobExecutionContext;
 import org.quartz.Trigger;
 import org.quartz.listeners.TriggerListenerSupport;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 
+@Component
 public class CustomTriggerListener extends TriggerListenerSupport {
 
     private static final String TRIGGER_LISTENER_NAME = "CustomTriggerListener";
@@ -22,10 +24,8 @@ public class CustomTriggerListener extends TriggerListenerSupport {
                 context.getJobDetail().getKey().getGroup());
         if(schedulerWrapperList != null && !schedulerWrapperList.isEmpty()) {
             schedulerWrapperList.forEach(schedulerWrapper -> {
-                if(schedulerWrapper != null) {
-                    schedulerWrapper.setActivationExpression(trigger.getFinalFireTime().toString());
-                    schedulerWrapperRepository.save(schedulerWrapper);
-                }
+                schedulerWrapper.setActivationExpression(context.getFireTime().toString());
+                schedulerWrapperRepository.save(schedulerWrapper);
             });
         }
     }

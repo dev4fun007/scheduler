@@ -5,6 +5,7 @@ import bytes.sync.errors.SchedulerObjectNotFound;
 import bytes.sync.entity.SchedulerWrapper;
 import bytes.sync.service.restapi.impl.APIServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -38,7 +39,7 @@ public class SchedulerAPI {
     @PostMapping(path = "/scheduler", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<SchedulerWrapper> createNewSchedulerObject(@RequestBody SchedulerWrapper schedulerWrapper) throws Exception {
         try {
-            return ResponseEntity.ok().body(apiService.createNewSchedulerWrapper(schedulerWrapper));
+            return ResponseEntity.status(HttpStatus.CREATED).body(apiService.createNewSchedulerWrapper(schedulerWrapper));
         } catch (Exception e) {
             throw e;
         }
