@@ -1,6 +1,6 @@
 package bytes.sync.repository;
 
-import bytes.sync.domain.SchedulerWrapper;
+import bytes.sync.entity.SchedulerWrapper;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -11,4 +11,5 @@ public interface SchedulerWrapperRepository extends JpaRepository<SchedulerWrapp
     @Override
     List<SchedulerWrapper> findAll();
     List<SchedulerWrapper> findByActiveTrue();
+    List<SchedulerWrapper> findAllByJobNameAndJobGroup(String jobName, String jobGroup);
 }

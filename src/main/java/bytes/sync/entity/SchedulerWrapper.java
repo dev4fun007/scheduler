@@ -1,4 +1,4 @@
-package bytes.sync.domain;
+package bytes.sync.entity;
 
 import org.hibernate.annotations.GenericGenerator;
 
