@@ -72,16 +72,15 @@ public class QuartzSchedulerServiceImpl implements GenericSchedulerService {
             //Create the trigger
             CronTriggerFactoryBean cronTriggerFactoryBean = getCronTriggerFactoryBean(schedulerWrapper, jobDetailFactoryBean.getObject());
 
-            if(!scheduler.checkExists(new JobKey(schedulerWrapper.getJobName(), schedulerWrapper.getJobGroup()))) {
-                //This job does not exists - create a new schedule
-                scheduler.scheduleJob(jobDetailFactoryBean.getObject(), cronTriggerFactoryBean.getObject());
-                scheduler.getListenerManager().addTriggerListener(customTriggerListener);
-                System.out.println("job schedule did not exists - created - now active and scheduled");
-            } else {
-                //This job does exists - maybe update the triggers
-                rescheduleTriggersForAJob(scheduler, schedulerWrapper, cronTriggerFactoryBean);
-                System.out.println("job schedule already exists - updated triggers - now active and scheduled");
-            }
+            //Rescheduling the job is not working properly as the new triggers are not getting attached
+            //To overcome this, delete this job and then schedule it again with new data
+            //Delete this entry
+            deleteScheduledJob(schedulerWrapper);
+
+            //Re-schedule the job
+            scheduler.scheduleJob(jobDetailFactoryBean.getObject(), cronTriggerFactoryBean.getObject());
+            scheduler.getListenerManager().addTriggerListener(customTriggerListener);
+            System.out.println("job updated by deleting and then re-creating it");
 
             //This object is no longer set to be active
             //Un-Schedule the job - disable all the triggers associated with this jobKey
@@ -188,7 +187,7 @@ public class QuartzSchedulerServiceImpl implements GenericSchedulerService {
         System.out.println("Rescheduling JobKey: " + jobKey);
         System.out.println("New TriggerKey: " + cronTriggerFactoryBean.getObject().getKey().toString() + " to be rescheduled");
         scheduler.rescheduleJob(cronTriggerFactoryBean.getObject().getKey(), cronTriggerFactoryBean.getObject());
-        System.out.println("rescheduled all the triggers");
+        System.out.println("rescheduled the triggers");
     }
 
 

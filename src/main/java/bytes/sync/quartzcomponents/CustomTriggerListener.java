@@ -26,6 +26,7 @@ public class CustomTriggerListener extends TriggerListenerSupport {
             schedulerWrapperList.forEach(schedulerWrapper -> {
                 schedulerWrapper.setActivationExpression(context.getFireTime().toString());
                 schedulerWrapperRepository.save(schedulerWrapper);
+                System.out.println("CustomTriggerListener adding fire time to the activationExpression");
             });
         }
     }
