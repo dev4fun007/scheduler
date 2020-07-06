@@ -5,6 +5,8 @@ import bytes.sync.errors.SchedulerObjectNotFound;
 import bytes.sync.repository.SchedulerWrapperRepository;
 import bytes.sync.service.restapi.contract.APIService;
 import bytes.sync.service.scheduler.impl.QuartzSchedulerServiceImpl;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -15,6 +17,8 @@ import java.util.Optional;
 
 @Service
 public class APIServiceImpl implements APIService {
+
+    private Logger logger = LoggerFactory.getLogger(APIServiceImpl.class);
 
     @Autowired
     private SchedulerWrapperRepository repository;
@@ -27,8 +31,10 @@ public class APIServiceImpl implements APIService {
     public List<SchedulerWrapper> getAllSchedulerWrappers(boolean isActive) {
         List<SchedulerWrapper> list;
         if(!isActive) {
+            logger.debug("isActive query param is set to false - fetching all the objects from db");
             list = repository.findAll();
         } else {
+            logger.debug("isActive query param is set to true - fetching the objects with active status as true from db");
             list = repository.findByActiveTrue();
         }
         return list;
@@ -38,6 +44,7 @@ public class APIServiceImpl implements APIService {
     public SchedulerWrapper getSchedulerWrapperById(String id) throws SchedulerObjectNotFound {
         Optional<SchedulerWrapper> wrapper = repository.findById(id);
         if(!wrapper.isPresent()) {
+            logger.error("no schedulerWrapper object found for the given id: {}", id);
             throw new SchedulerObjectNotFound("id: " + id);
         }
         return wrapper.get();
@@ -49,9 +56,11 @@ public class APIServiceImpl implements APIService {
             wrapper.setAddedOn(Date.valueOf(LocalDate.now()));
             SchedulerWrapper response = repository.save(wrapper);
             quartzSchedulerService.scheduleNewJob(wrapper);
-            System.out.println("Job with id: "+response.getId()+" is created");
+            logger.debug("Job with id: {} is created", wrapper.getId());
+
             return response;
         } catch (Exception e) {
+            logger.error("error creating a new entity", e);
             throw e;
         }
     }
@@ -64,12 +73,15 @@ public class APIServiceImpl implements APIService {
                 wrapper.setId(id);
                 schedulerWrapper = repository.save(wrapper);
                 quartzSchedulerService.updateScheduleJob(schedulerWrapper);
-                System.out.println("Job with id: "+wrapper.getId()+" is updated");
+                logger.debug("Job with id: {} is created", wrapper.getId());
+
                 return schedulerWrapper;
             } else {
+                logger.error("no schedulerWrapper object found for the given id: {}", id);
                 throw new SchedulerObjectNotFound("id: " + id);
             }
         } catch (Exception e) {
+            logger.error("error updating a new entity", e);
             throw e;
         }
     }
@@ -81,11 +93,13 @@ public class APIServiceImpl implements APIService {
             if(schedulerWrapper != null) {
                 boolean quartzDeleted = quartzSchedulerService.deleteScheduledJob(schedulerWrapper);
                 repository.deleteById(id);
-                System.out.println("Job with id: "+id+" isDeleted: "+quartzDeleted);
+                logger.debug("Job with id: {} isDeleted: {}", id, quartzDeleted);
             } else {
+                logger.error("no schedulerWrapper object found for the given id: {}", id);
                 throw new SchedulerObjectNotFound("id: " + id);
             }
         } catch (Exception e) {
+            logger.error("error deleting a new entity", e);
             throw e;
         }
     }

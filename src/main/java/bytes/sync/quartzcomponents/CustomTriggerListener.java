@@ -5,6 +5,8 @@ import bytes.sync.repository.SchedulerWrapperRepository;
 import org.quartz.JobExecutionContext;
 import org.quartz.Trigger;
 import org.quartz.listeners.TriggerListenerSupport;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -12,7 +14,7 @@ import java.util.List;
 
 @Component
 public class CustomTriggerListener extends TriggerListenerSupport {
-
+    private Logger logger = LoggerFactory.getLogger(CustomTriggerListener.class);
     private static final String TRIGGER_LISTENER_NAME = "CustomTriggerListener";
 
     @Autowired
@@ -26,7 +28,7 @@ public class CustomTriggerListener extends TriggerListenerSupport {
             schedulerWrapperList.forEach(schedulerWrapper -> {
                 schedulerWrapper.setActivationExpression(context.getFireTime().toString());
                 schedulerWrapperRepository.save(schedulerWrapper);
-                System.out.println("CustomTriggerListener adding fire time to the activationExpression");
+                logger.debug("CustomTriggerListener adding fire time to the activationExpression");
             });
         }
     }
