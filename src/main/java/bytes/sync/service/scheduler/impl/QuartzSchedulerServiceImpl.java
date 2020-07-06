@@ -79,7 +79,7 @@ public class QuartzSchedulerServiceImpl implements GenericSchedulerService {
                 System.out.println("job schedule did not exists - created - now active and scheduled");
             } else {
                 //This job does exists - maybe update the triggers
-                scheduler.rescheduleJob(cronTriggerFactoryBean.getObject().getKey(), cronTriggerFactoryBean.getObject());
+                rescheduleTriggersForAJob(scheduler, schedulerWrapper, cronTriggerFactoryBean);
                 System.out.println("job schedule already exists - updated triggers - now active and scheduled");
             }
 
@@ -93,7 +93,6 @@ public class QuartzSchedulerServiceImpl implements GenericSchedulerService {
         } catch (ClassNotFoundException | ParseException e) {
             e.printStackTrace();
         }
-
     }
 
     @Override
@@ -166,13 +165,26 @@ public class QuartzSchedulerServiceImpl implements GenericSchedulerService {
         //Disable all the triggers related to this job
         JobKey jobKey = new JobKey(schedulerWrapper.getJobName(), schedulerWrapper.getJobGroup());
         List<Trigger> triggers = (List<Trigger>) scheduler.getTriggersOfJob(jobKey);
-        System.out.println("JobKey: " + jobKey + ", FoundTriggerCount: " + triggers.size());
+        System.out.println("JobKey: " + jobKey + ", FoundTriggerCount: " + triggers.size() + " to un-schedule");
 
         for(Trigger trigger : triggers) {
             scheduler.unscheduleJob(trigger.getKey());
             System.out.println("Disabled TriggerKey: " + trigger.getKey());
         }
         System.out.println("unscheduled all the triggers");
+    }
+
+
+    private void rescheduleTriggersForAJob(Scheduler scheduler, SchedulerWrapper schedulerWrapper, CronTriggerFactoryBean cronTriggerFactoryBean) throws SchedulerException {
+        JobKey jobKey = new JobKey(schedulerWrapper.getJobName(), schedulerWrapper.getJobGroup());
+        List<Trigger> triggers = (List<Trigger>) scheduler.getTriggersOfJob(jobKey);
+        System.out.println("JobKey: " + jobKey + ", FoundTriggerCount: " + triggers.size() + " to reschedule");
+
+        for(Trigger trigger : triggers) {
+            scheduler.rescheduleJob(trigger.getKey(), cronTriggerFactoryBean.getObject());
+            System.out.println("Rescheduled TriggerKey: " + trigger.getKey());
+        }
+        System.out.println("rescheduled all the triggers");
     }
 
 
