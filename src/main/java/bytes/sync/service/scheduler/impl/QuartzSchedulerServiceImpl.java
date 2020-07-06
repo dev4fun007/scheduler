@@ -175,15 +175,19 @@ public class QuartzSchedulerServiceImpl implements GenericSchedulerService {
     }
 
 
+    /**
+     * If the job was set to inactive - all the triggers associated with it will be removed
+     * We need to add the trigger when the job is again set to active
+     * @param scheduler
+     * @param schedulerWrapper
+     * @param cronTriggerFactoryBean
+     * @throws SchedulerException
+     */
     private void rescheduleTriggersForAJob(Scheduler scheduler, SchedulerWrapper schedulerWrapper, CronTriggerFactoryBean cronTriggerFactoryBean) throws SchedulerException {
         JobKey jobKey = new JobKey(schedulerWrapper.getJobName(), schedulerWrapper.getJobGroup());
-        List<Trigger> triggers = (List<Trigger>) scheduler.getTriggersOfJob(jobKey);
-        System.out.println("JobKey: " + jobKey + ", FoundTriggerCount: " + triggers.size() + " to reschedule");
-
-        for(Trigger trigger : triggers) {
-            scheduler.rescheduleJob(trigger.getKey(), cronTriggerFactoryBean.getObject());
-            System.out.println("Rescheduled TriggerKey: " + trigger.getKey());
-        }
+        System.out.println("Rescheduling JobKey: " + jobKey);
+        System.out.println("New TriggerKey: " + cronTriggerFactoryBean.getObject().getKey().toString() + " to be rescheduled");
+        scheduler.rescheduleJob(cronTriggerFactoryBean.getObject().getKey(), cronTriggerFactoryBean.getObject());
         System.out.println("rescheduled all the triggers");
     }
 
