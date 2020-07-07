@@ -8,17 +8,20 @@ import org.quartz.listeners.TriggerListenerSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-@Component
+
 public class CustomTriggerListener extends TriggerListenerSupport {
     private Logger logger = LoggerFactory.getLogger(CustomTriggerListener.class);
-    public static final String TRIGGER_LISTENER_NAME = "CustomTriggerListener";
-
     @Autowired
     SchedulerWrapperRepository schedulerWrapperRepository;
+    private String name;
+
+    public CustomTriggerListener(String name) {
+        this.name = name;
+    }
+
 
     @Override
     public void triggerFired(Trigger trigger, JobExecutionContext context) {
@@ -35,6 +38,6 @@ public class CustomTriggerListener extends TriggerListenerSupport {
 
     @Override
     public String getName() {
-        return TRIGGER_LISTENER_NAME;
+        return name;
     }
 }
