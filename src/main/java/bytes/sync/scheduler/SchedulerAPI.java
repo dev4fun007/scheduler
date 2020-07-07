@@ -1,9 +1,13 @@
 package bytes.sync.scheduler;
 
 
+import bytes.sync.errors.DuplicateJob;
 import bytes.sync.errors.SchedulerObjectNotFound;
 import bytes.sync.entity.SchedulerWrapper;
 import bytes.sync.service.restapi.impl.APIServiceImpl;
+import org.quartz.SchedulerException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -14,6 +18,8 @@ import java.util.List;
 
 @RestController
 public class SchedulerAPI {
+
+    private Logger logger = LoggerFactory.getLogger(SchedulerAPI.class);
 
     @Autowired
     private APIServiceImpl apiService;
@@ -33,13 +39,15 @@ public class SchedulerAPI {
         } catch (SchedulerObjectNotFound e) {
             throw e;
         }
-
     }
 
     @PostMapping(path = "/scheduler", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<SchedulerWrapper> createNewSchedulerObject(@RequestBody SchedulerWrapper schedulerWrapper) throws Exception {
         try {
             return ResponseEntity.status(HttpStatus.CREATED).body(apiService.createNewSchedulerWrapper(schedulerWrapper));
+        } catch (DuplicateJob e) {
+            logger.error("unable to create a new job entity: {}", e.getMessage(), e);
+            throw e;
         } catch (Exception e) {
             throw e;
         }

@@ -1,10 +1,12 @@
 package bytes.sync.service.restapi.impl;
 
 import bytes.sync.entity.SchedulerWrapper;
+import bytes.sync.errors.DuplicateJob;
 import bytes.sync.errors.SchedulerObjectNotFound;
 import bytes.sync.repository.SchedulerWrapperRepository;
 import bytes.sync.service.restapi.contract.APIService;
 import bytes.sync.service.scheduler.impl.QuartzSchedulerServiceImpl;
+import org.quartz.SchedulerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,12 +55,19 @@ public class APIServiceImpl implements APIService {
     @Override
     public SchedulerWrapper createNewSchedulerWrapper(SchedulerWrapper wrapper) throws Exception {
         try {
+            //Add current date/time to the AddedOn field
             wrapper.setAddedOn(Date.valueOf(LocalDate.now()));
-            SchedulerWrapper response = repository.save(wrapper);
-            quartzSchedulerService.scheduleNewJob(wrapper);
-            logger.debug("Job with id: {} is created", wrapper.getId());
 
+            //First try to schedule the job
+            quartzSchedulerService.scheduleNewJob(wrapper);
+
+            //If there was no exception - save this object
+            SchedulerWrapper response = repository.save(wrapper);
+            logger.debug("Job with id: {} is created", response.getId());
             return response;
+        } catch (SchedulerException e) {
+            logger.error("scheduler exception occurred with error message: {}", e.getMessage(), e);
+            throw new DuplicateJob(e.getMessage());
         } catch (Exception e) {
             logger.error("error creating a new entity", e);
             throw e;
@@ -71,15 +80,19 @@ public class APIServiceImpl implements APIService {
             SchedulerWrapper schedulerWrapper = getSchedulerWrapperById(id);
             if(schedulerWrapper != null) {
                 wrapper.setId(id);
+                wrapper.setAddedOn(schedulerWrapper.getAddedOn());
+                wrapper.setActivationExpression(schedulerWrapper.getActivationExpression());
+                quartzSchedulerService.updateScheduleJob(wrapper);
                 schedulerWrapper = repository.save(wrapper);
-                quartzSchedulerService.updateScheduleJob(schedulerWrapper);
                 logger.debug("Job with id: {} is created", wrapper.getId());
-
                 return schedulerWrapper;
             } else {
                 logger.error("no schedulerWrapper object found for the given id: {}", id);
                 throw new SchedulerObjectNotFound("id: " + id);
             }
+        } catch (SchedulerException e) {
+            logger.error("scheduler exception occurred with error message: {}", e.getMessage(), e);
+            throw new DuplicateJob(e.getMessage());
         } catch (Exception e) {
             logger.error("error updating a new entity", e);
             throw e;

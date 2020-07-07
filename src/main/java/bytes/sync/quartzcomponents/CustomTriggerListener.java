@@ -15,7 +15,7 @@ import java.util.List;
 @Component
 public class CustomTriggerListener extends TriggerListenerSupport {
     private Logger logger = LoggerFactory.getLogger(CustomTriggerListener.class);
-    private static final String TRIGGER_LISTENER_NAME = "CustomTriggerListener";
+    public static final String TRIGGER_LISTENER_NAME = "CustomTriggerListener";
 
     @Autowired
     SchedulerWrapperRepository schedulerWrapperRepository;

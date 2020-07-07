@@ -48,6 +48,8 @@ public class QuartzSchedulerServiceImpl implements GenericSchedulerService {
 
             //Schedule job
             scheduler.scheduleJob(jobDetailFactoryBean.getObject(), cronTriggerFactoryBean.getObject());
+            //Add the trigger listener as this object is scheduled for execution
+            scheduler.getListenerManager().addTriggerListener(customTriggerListener);
 
             //If the newly created schedulerWrapper object is not set to active
             //un-schedule it now
@@ -55,8 +57,6 @@ public class QuartzSchedulerServiceImpl implements GenericSchedulerService {
                 disableAllTriggersForAJob(scheduler, schedulerWrapper);
                 logger.info("new job schedule created - inactive and unscheduled");
             } else {
-                //Add the trigger listener as this object is scheduled for execution
-                scheduler.getListenerManager().addTriggerListener(customTriggerListener);
                 logger.info("new job schedule created - active and scheduled");
             }
         } catch (InvalidCronExpression | SchedulerException e) {
@@ -77,21 +77,13 @@ public class QuartzSchedulerServiceImpl implements GenericSchedulerService {
             //Create the trigger
             CronTriggerFactoryBean cronTriggerFactoryBean = getCronTriggerFactoryBean(schedulerWrapper, jobDetailFactoryBean.getObject());
 
-            //Rescheduling the job is not working properly as the new triggers are not getting attached
-            //To overcome this, delete this job and then schedule it again with new data
-            //Delete this entry
-            deleteScheduledJob(schedulerWrapper);
-
             //Re-schedule the job
-            scheduler.scheduleJob(jobDetailFactoryBean.getObject(), cronTriggerFactoryBean.getObject());
-            scheduler.getListenerManager().addTriggerListener(customTriggerListener);
-            logger.info("job updated with new/old schedule");
+            //Since this is an update(PUT) call - a valid non-null schedulerWrapper object must be present
+            //with a valid scheduled object in quartz - no need to check if a job exists or not
+            //This will handle the active status and adding/removing customTriggerListener
+            rescheduleJob(scheduler, schedulerWrapper, cronTriggerFactoryBean);
 
-            //This object is no longer set to be active
-            //Un-Schedule the job - disable all the triggers associated with this jobKey
-            if(!schedulerWrapper.getActive()) {
-                disableAllTriggersForAJob(scheduler, schedulerWrapper);
-            }
+            logger.info("job updated with new/old schedule");
         } catch (InvalidCronExpression | SchedulerException e) {
             logger.error("error occurred while scheduling a new job", e);
             throw e;
@@ -124,7 +116,8 @@ public class QuartzSchedulerServiceImpl implements GenericSchedulerService {
         JobDetailFactoryBean jobDetailFactoryBean = new JobDetailFactoryBean();
         try {
             jobDetailFactoryBean.setApplicationContext(context);
-            jobDetailFactoryBean.setJobClass((Class<? extends QuartzJobBean>) Class.forName(schedulerWrapper.getJobClass()));
+            String jobClass = "bytes.sync.jobs." + schedulerWrapper.getJobClass();
+            jobDetailFactoryBean.setJobClass((Class<? extends QuartzJobBean>) Class.forName(jobClass));
             jobDetailFactoryBean.setDurability(true);
             jobDetailFactoryBean.setGroup(schedulerWrapper.getJobGroup());
             jobDetailFactoryBean.setName(schedulerWrapper.getJobName());
@@ -148,14 +141,16 @@ public class QuartzSchedulerServiceImpl implements GenericSchedulerService {
         PersistCronTriggerFactoryBean cronTriggerFactoryBean = new PersistCronTriggerFactoryBean();
         try {
             cronTriggerFactoryBean.setJobDetail(jobDetail);
-            cronTriggerFactoryBean.setGroup(schedulerWrapper.getJobGroup());
-            cronTriggerFactoryBean.setName(schedulerWrapper.getJobName());
-            cronTriggerFactoryBean.setMisfireInstruction(CronTrigger.MISFIRE_INSTRUCTION_FIRE_ONCE_NOW);
+            cronTriggerFactoryBean.setGroup(jobDetail.getKey().getGroup());
+            cronTriggerFactoryBean.setName(jobDetail.getKey().getName());
+            cronTriggerFactoryBean.setMisfireInstruction(CronTrigger.MISFIRE_INSTRUCTION_DO_NOTHING);
             cronTriggerFactoryBean.setStartTime(schedulerWrapper.getStartTime());
 
             //Validate and then add the passed in cron expression
             if(!CronExpression.isValidExpression(schedulerWrapper.getCronExpression()))
                 throw new InvalidCronExpression(schedulerWrapper.getCronExpression());
+
+            //cronExpression is valid - add it to the trigger
             cronTriggerFactoryBean.setCronExpression(schedulerWrapper.getCronExpression());
 
             cronTriggerFactoryBean.afterPropertiesSet();
@@ -173,6 +168,7 @@ public class QuartzSchedulerServiceImpl implements GenericSchedulerService {
 
     /**
      * Disable each of the triggers attached to a specific jobName & jobGroup combination
+     * This does not remove the triggers - just pause them
      * @param scheduler
      * @param schedulerWrapper
      * @throws SchedulerException
@@ -181,31 +177,46 @@ public class QuartzSchedulerServiceImpl implements GenericSchedulerService {
         //Disable all the triggers related to this job
         JobKey jobKey = new JobKey(schedulerWrapper.getJobName(), schedulerWrapper.getJobGroup());
         List<Trigger> triggers = (List<Trigger>) scheduler.getTriggersOfJob(jobKey);
-        logger.debug("JobKey: {}, FoundTriggerCount: {} to un-schedule", jobKey, triggers.size());
+        logger.debug("JobKey: {}, FoundTriggerCount: {} to pause trigger", jobKey, triggers.size());
 
         for(Trigger trigger : triggers) {
-            scheduler.unscheduleJob(trigger.getKey());
-            logger.debug("Disabled TriggerKey: {}", trigger.getKey());
+            scheduler.pauseTrigger(trigger.getKey());
+            scheduler.getListenerManager().removeTriggerListener(CustomTriggerListener.TRIGGER_LISTENER_NAME);
+            logger.debug("Paused TriggerKey: {}, Removed CustomTriggerListener", trigger.getKey());
         }
-        logger.debug("unscheduled all the triggers");
+        logger.debug("paused all the triggers");
     }
 
-
     /**
-     * If the job was set to inactive - all the triggers associated with it will be removed
-     * We need to add the trigger when the job is again set to active
+     * Rescheduling the jobs - activating/pausing triggers based on the active status
+     * This keeps all the triggers still attached to the job but just pause/resumes them
+     * New trigger object is added to each triggerKey
      * @param scheduler
      * @param schedulerWrapper
      * @param cronTriggerFactoryBean
      * @throws SchedulerException
      */
-    private void rescheduleTriggersForAJob(Scheduler scheduler, SchedulerWrapper schedulerWrapper, CronTriggerFactoryBean cronTriggerFactoryBean) throws SchedulerException {
+    private void rescheduleJob(Scheduler scheduler, SchedulerWrapper schedulerWrapper, CronTriggerFactoryBean cronTriggerFactoryBean) throws SchedulerException {
         JobKey jobKey = new JobKey(schedulerWrapper.getJobName(), schedulerWrapper.getJobGroup());
-        logger.debug("Rescheduling JobKey: {}", jobKey);
-        logger.debug("New TriggerKey: {} to be rescheduled", cronTriggerFactoryBean.getObject().getKey().toString());
-        scheduler.rescheduleJob(cronTriggerFactoryBean.getObject().getKey(), cronTriggerFactoryBean.getObject());
-        logger.debug("rescheduled the triggers");
+        List<Trigger> triggerList = (List<Trigger>) scheduler.getTriggersOfJob(jobKey);
+        logger.debug("JobKey: {}, FoundTriggerCount: {} to resume/pause trigger", jobKey, triggerList.size());
+
+        for(Trigger trigger : triggerList) {
+            scheduler.rescheduleJob(trigger.getKey(), cronTriggerFactoryBean.getObject());
+            logger.debug("RescheduledJob With TriggerKey: {}", trigger.getKey());
+            if(schedulerWrapper.getActive()) {
+                scheduler.resumeTrigger(trigger.getKey());
+                scheduler.getListenerManager().addTriggerListener(customTriggerListener);
+                logger.debug("Resumed TriggerKey: {}, Added CustomTriggerListener", trigger.getKey());
+            } else {
+                scheduler.pauseTrigger(trigger.getKey());
+                scheduler.getListenerManager().removeTriggerListener(CustomTriggerListener.TRIGGER_LISTENER_NAME);
+                logger.debug("Paused TriggerKey: {}, Removed CustomTriggerListener", trigger.getKey());
+            }
+        }
+        logger.debug("resumed/paused all the triggers");
     }
+
 
 
     /**
@@ -220,23 +231,26 @@ public class QuartzSchedulerServiceImpl implements GenericSchedulerService {
             Scheduler scheduler = schedulerFactoryBean.getScheduler();
             schedulerWrapperList.forEach(schedulerWrapper -> {
                 try {
-                    JobDetailFactoryBean jobDetailFactoryBean = getJobDetailFactoryBean(schedulerWrapper);
-                    CronTriggerFactoryBean cronTriggerFactoryBean = getCronTriggerFactoryBean(schedulerWrapper, jobDetailFactoryBean.getObject());
-
                     //Check if a schedule for the given jobKey exists, if not then create a new one
                     if(!scheduler.checkExists(new JobKey(schedulerWrapper.getJobName(), schedulerWrapper.getJobGroup()))) {
                         logger.debug("Job for this SchedulerWrapper Object: {} is not present, scheduling it", schedulerWrapper.getId());
-                        scheduler.scheduleJob(jobDetailFactoryBean.getObject(), cronTriggerFactoryBean.getObject());
-                    }
 
-                    //If a new schedule was created but the active state was false - disable all the triggers
-                    //do not delete the job, if the user wants job deleted - they will call delete rest api
-                    if(!schedulerWrapper.getActive()) {
-                        logger.info("SchedulerWrapper Object with id: {} not scheduled at startup as active status is false", schedulerWrapper.getId());
-                        disableAllTriggersForAJob(scheduler, schedulerWrapper);
+                        //Create jobDetailBean and cronTriggerBean
+                        JobDetailFactoryBean jobDetailFactoryBean = getJobDetailFactoryBean(schedulerWrapper);
+                        CronTriggerFactoryBean cronTriggerFactoryBean = getCronTriggerFactoryBean(schedulerWrapper, jobDetailFactoryBean.getObject());
+                        scheduler.scheduleJob(jobDetailFactoryBean.getObject(), cronTriggerFactoryBean.getObject());
+
+                        //If a new schedule was created but the active state was false - disable all the triggers
+                        //do not delete the job, if the user wants job deleted - they will call delete rest api
+                        if(!schedulerWrapper.getActive()) {
+                            logger.info("SchedulerWrapper Object with id: {} not scheduled at startup as active status is false", schedulerWrapper.getId());
+                            disableAllTriggersForAJob(scheduler, schedulerWrapper);
+                        } else {
+                            scheduler.getListenerManager().addTriggerListener(customTriggerListener);
+                            logger.info("SchedulerWrapper Object with id: {} scheduled at startup and attached customTriggerListener", schedulerWrapper.getId());
+                        }
                     } else {
-                        logger.info("SchedulerWrapper Object with id: {} scheduled at startup", schedulerWrapper.getId());
-                        scheduler.getListenerManager().addTriggerListener(customTriggerListener);
+                        logger.debug("scheduler exists for the objectId: {}", schedulerWrapper.getId());
                     }
                 } catch (ClassNotFoundException | SchedulerException | InvalidCronExpression e) {
                     logger.error("error creating quartz schedules at startup", e);
