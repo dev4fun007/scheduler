@@ -20,7 +20,7 @@ import java.util.List;
 @Service
 public class QuartzSchedulerServiceImpl implements GenericSchedulerService {
 
-    private Logger logger = LoggerFactory.getLogger(QuartzSchedulerServiceImpl.class);
+    private final Logger logger = LoggerFactory.getLogger(QuartzSchedulerServiceImpl.class);
 
 
     @Autowired
@@ -31,6 +31,9 @@ public class QuartzSchedulerServiceImpl implements GenericSchedulerService {
 
     @Autowired
     private SchedulerWrapperRepository schedulerWrapperRepository;
+
+    @Autowired
+    CustomTriggerListener customTriggerListener;
 
 
     /**
@@ -52,7 +55,7 @@ public class QuartzSchedulerServiceImpl implements GenericSchedulerService {
             //Schedule job
             scheduler.scheduleJob(jobDetailFactoryBean.getObject(), cronTriggerFactoryBean.getObject());
             //Add the trigger listener as this object is scheduled for execution
-            scheduler.getListenerManager().addTriggerListener(new CustomTriggerListener(cronTriggerFactoryBean.getObject().getKey().toString()));
+            scheduler.getListenerManager().addTriggerListener(customTriggerListener);
 
             //If the newly created schedulerWrapper object is not set to active
             //un-schedule it now
@@ -131,15 +134,25 @@ public class QuartzSchedulerServiceImpl implements GenericSchedulerService {
 
         if(!schedulerWrapperList.isEmpty()) {
             Scheduler scheduler = schedulerFactoryBean.getScheduler();
+            try {
+                if(scheduler.getListenerManager().getTriggerListener(CustomTriggerListener.CUSTOM_TRIGGER_NAME) == null) {
+                    logger.debug("no custom trigger attached to the scheduler, adding one now");
+                    scheduler.getListenerManager().addTriggerListener(customTriggerListener);
+                }
+            } catch (SchedulerException e) {
+                logger.error("error adding custom trigger listener at startup", e);
+            }
+
             schedulerWrapperList.forEach(schedulerWrapper -> {
                 try {
+                    //Create jobDetailBean and cronTriggerBean
+                    JobDetailFactoryBean jobDetailFactoryBean = getJobDetailFactoryBean(schedulerWrapper);
+                    CronTriggerFactoryBean cronTriggerFactoryBean = getCronTriggerFactoryBean(schedulerWrapper, jobDetailFactoryBean.getObject());
+
                     //Check if a schedule for the given jobKey exists, if not then create a new one
                     if(!scheduler.checkExists(new JobKey(schedulerWrapper.getJobName(), schedulerWrapper.getJobGroup()))) {
                         logger.debug("Job for this SchedulerWrapper Object: {} is not present, scheduling it", schedulerWrapper.getId());
 
-                        //Create jobDetailBean and cronTriggerBean
-                        JobDetailFactoryBean jobDetailFactoryBean = getJobDetailFactoryBean(schedulerWrapper);
-                        CronTriggerFactoryBean cronTriggerFactoryBean = getCronTriggerFactoryBean(schedulerWrapper, jobDetailFactoryBean.getObject());
                         scheduler.scheduleJob(jobDetailFactoryBean.getObject(), cronTriggerFactoryBean.getObject());
 
                         //If a new schedule was created but the active state was false - disable all the triggers
@@ -148,10 +161,10 @@ public class QuartzSchedulerServiceImpl implements GenericSchedulerService {
                             logger.info("SchedulerWrapper Object with id: {} not scheduled at startup as active status is false", schedulerWrapper.getId());
                             disableAllTriggersForAJob(scheduler, schedulerWrapper);
                         } else {
-                            scheduler.getListenerManager().addTriggerListener(new CustomTriggerListener(cronTriggerFactoryBean.getObject().getKey().toString()));
-                            logger.info("SchedulerWrapper Object with id: {} scheduled at startup and attached customTriggerListener", schedulerWrapper.getId());
+                            logger.info("SchedulerWrapper Object with id: {} scheduled at startup", schedulerWrapper.getId());
                         }
                     } else {
+                        rescheduleJob(scheduler, schedulerWrapper, cronTriggerFactoryBean);
                         logger.debug("scheduler exists for the objectId: {}", schedulerWrapper.getId());
                     }
                 } catch (ClassNotFoundException | SchedulerException | InvalidCronExpression e) {
@@ -200,7 +213,7 @@ public class QuartzSchedulerServiceImpl implements GenericSchedulerService {
             cronTriggerFactoryBean.setJobDetail(jobDetail);
             cronTriggerFactoryBean.setGroup(jobDetail.getKey().getGroup());
             cronTriggerFactoryBean.setName(jobDetail.getKey().getName());
-            cronTriggerFactoryBean.setMisfireInstruction(CronTrigger.MISFIRE_INSTRUCTION_DO_NOTHING);
+            cronTriggerFactoryBean.setMisfireInstruction(CronTrigger.MISFIRE_INSTRUCTION_FIRE_ONCE_NOW);
             cronTriggerFactoryBean.setStartTime(schedulerWrapper.getStartTime());
 
             //Validate and then add the passed in cron expression
@@ -238,7 +251,7 @@ public class QuartzSchedulerServiceImpl implements GenericSchedulerService {
 
         for(Trigger trigger : triggers) {
             scheduler.pauseTrigger(trigger.getKey());
-            scheduler.getListenerManager().removeTriggerListener(trigger.getKey().toString());
+//            scheduler.getListenerManager().removeTriggerListener(trigger.getKey().toString());
             logger.debug("Paused TriggerKey: {}, Removed CustomTriggerListener", trigger.getKey());
         }
         logger.debug("paused all the triggers");
@@ -263,11 +276,11 @@ public class QuartzSchedulerServiceImpl implements GenericSchedulerService {
             logger.debug("RescheduledJob With TriggerKey: {}", trigger.getKey());
             if(schedulerWrapper.getActive()) {
                 scheduler.resumeTrigger(trigger.getKey());
-                scheduler.getListenerManager().addTriggerListener(new CustomTriggerListener(trigger.getKey().toString()));
+//                scheduler.getListenerManager().addTriggerListener(customTriggerListener);
                 logger.debug("Resumed TriggerKey: {}, Added CustomTriggerListener", trigger.getKey());
             } else {
                 scheduler.pauseTrigger(trigger.getKey());
-                scheduler.getListenerManager().removeTriggerListener(trigger.getKey().toString());
+//                scheduler.getListenerManager().removeTriggerListener(trigger.getKey().toString());
                 logger.debug("Paused TriggerKey: {}, Removed CustomTriggerListener", trigger.getKey());
             }
         }

@@ -19,7 +19,7 @@ import java.util.List;
 @RestController
 public class SchedulerAPI {
 
-    private Logger logger = LoggerFactory.getLogger(SchedulerAPI.class);
+    private final Logger logger = LoggerFactory.getLogger(SchedulerAPI.class);
 
     @Autowired
     private APIServiceImpl apiService;

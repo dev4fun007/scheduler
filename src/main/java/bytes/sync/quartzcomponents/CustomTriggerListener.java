@@ -8,36 +8,22 @@ import org.quartz.listeners.TriggerListenerSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-
+import org.springframework.stereotype.Component;
 import java.util.List;
 
-
+@Component
 public class CustomTriggerListener extends TriggerListenerSupport {
-    private Logger logger = LoggerFactory.getLogger(CustomTriggerListener.class);
-    @Autowired
-    SchedulerWrapperRepository schedulerWrapperRepository;
-    private String name;
-
-    public CustomTriggerListener(String name) {
-        this.name = name;
-    }
-
+    private final Logger logger = LoggerFactory.getLogger(CustomTriggerListener.class);
+    public static final String CUSTOM_TRIGGER_NAME = "QUARTZ_CUSTOM_TRIGGER_LISTENER";
 
     @Override
     public void triggerFired(Trigger trigger, JobExecutionContext context) {
-        List<SchedulerWrapper> schedulerWrapperList = schedulerWrapperRepository.findAllByJobNameAndJobGroup(context.getJobDetail().getKey().getName(),
-                context.getJobDetail().getKey().getGroup());
-        if(schedulerWrapperList != null && !schedulerWrapperList.isEmpty()) {
-            schedulerWrapperList.forEach(schedulerWrapper -> {
-                schedulerWrapper.setActivationExpression(context.getFireTime().toString());
-                schedulerWrapperRepository.save(schedulerWrapper);
-                logger.debug("CustomTriggerListener adding fire time to the activationExpression");
-            });
-        }
+//        logger.debug("Fired TriggerKey: {}", trigger.getKey().toString());
+//        logger.debug("NextFireTime: {} ", trigger.getNextFireTime().toString());
     }
 
     @Override
     public String getName() {
-        return name;
+        return CUSTOM_TRIGGER_NAME;
     }
 }

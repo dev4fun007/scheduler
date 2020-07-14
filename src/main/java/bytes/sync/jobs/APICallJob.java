@@ -3,37 +3,44 @@ package bytes.sync.jobs;
 import kong.unirest.Unirest;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
+import org.quartz.SchedulerException;
+import org.quartz.TriggerKey;
+import org.quartz.impl.matchers.EverythingMatcher;
+import org.quartz.impl.matchers.GroupMatcher;
+import org.quartz.impl.matchers.KeyMatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 import org.springframework.stereotype.Component;
-
-import java.util.Random;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Set;
 
 
 @Component
 public class APICallJob extends QuartzJobBean {
 
-    private Logger logger = LoggerFactory.getLogger(APICallJob.class);
+    private final Logger logger = LoggerFactory.getLogger(APICallJob.class);
 
     @Override
     protected void executeInternal(JobExecutionContext jobExecutionContext) throws JobExecutionException {
-        logger.info("Cron-Scheduled APICallJob Executing");
-
-        //Make api call to a different service
-        String url = "https://ping-postgresql.herokuapp.com/ping";
-//        String url = "http://localhost:8081/ping";
-
-        Random random = new Random();
-        String jsonData = "{\"name\":\"ping_"+ random.nextInt(100) + "\"}";
-
-        Unirest.post(url)
-                .header("Content-Type", "application/json")
-                .body(jsonData)
-                .asEmpty();
-
-        logger.info("Cron-Scheduled APICallJob Execution Ends");
-        logger.info("Check a new ping object created in the ping micro-service");
+        logger.info("Cron-Scheduled APICallJob Execution Started:");
+/*        logger.info("TriggerKey: {}", jobExecutionContext.getTrigger().getKey().toString());
+        logger.info("JobKey: {}", jobExecutionContext.getJobDetail().getKey());
+        logger.info("FireTime: {}", jobExecutionContext.getFireTime());
+        try {
+            List<String> triggerGroups = jobExecutionContext.getScheduler().getTriggerGroupNames();
+            logger.info("TriggerGroups: {}", triggerGroups);
+            for(String key:triggerGroups) {
+                Set<TriggerKey> triggerKeySet = jobExecutionContext.getScheduler().getTriggerKeys(GroupMatcher.triggerGroupEquals(key));
+                for(TriggerKey triggerKey:triggerKeySet) {
+                    logger.info("TriggerState: {}", jobExecutionContext.getScheduler().getTriggerState(triggerKey));
+                }
+            }
+        } catch (SchedulerException e) {
+            e.printStackTrace();
+        }*/
     }
 
 }
