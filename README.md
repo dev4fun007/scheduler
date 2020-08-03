@@ -21,7 +21,12 @@ This will make an entry to the PostgreSQL database and create a new job in Quart
   "startTime": "2020-07-01",
   "addedBy": "author",
   "active": false,
-  "rowSecurity": "secure1"
+  "rowSecurity": "secure1",
+  "activationExpression":{
+    "url": "http://httpbin.org/anything",
+    "method": "POST",
+    "payload": "{\"a\":1}"
+  }
 }
 ```
 
@@ -45,7 +50,12 @@ This will update the triggers and job details for an existing scheduler object. 
   "startTime": "2020-07-01",
   "addedBy": "author",
   "active": false,
-  "rowSecurity": "secure1"
+  "rowSecurity": "secure1",
+  "activationExpression":{
+    "url": "http://httpbin.org/anything",
+    "method": "POST",
+    "payload": "{\"a\":1}"
+  }
 }
 ```
 
@@ -81,8 +91,12 @@ This will return details about the existing scheduler object whose id is passed.
   "startTime": "2020-07-01",
   "addedBy": "author",
   "active": false,,
-  "activationExpression" : "timestamp"
-  "rowSecurity": "secure1"
+  "rowSecurity": "secure1",
+  "activationExpression":{
+    "url": "http://httpbin.org/anything",
+    "method": "POST",
+    "payload": "{\"a\":1}"
+  }
 }
 ```
 
@@ -104,8 +118,12 @@ This will return all the schduler object present in the database as an array.
     "startTime": "2020-07-01",
     "addedBy": "author",
     "active": false,,
-    "activationExpression" : "timestamp"
-    "rowSecurity": "secure1"
+    "rowSecurity": "secure1",
+    "activationExpression":{
+        "url": "http://httpbin.org/anything",
+        "method": "POST",
+        "payload": "{\"a\":1}"
+    }
   }
 ]
 ```
@@ -125,9 +143,13 @@ Filter all the objects which are set to active
     "cronExpression": "0 0/1 * * * ?",
     "startTime": "2020-07-01",
     "addedBy": "author",
-    "active": true,,
-    "activationExpression" : "timestamp"
-    "rowSecurity": "secure1"
+    "active": true,
+    "rowSecurity": "secure1",
+    "activationExpression":{
+        "url": "http://httpbin.org/anything",
+        "method": "POST",
+        "payload": "{\"a\":1}"
+    }
   }
 ]
 ```
