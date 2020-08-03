@@ -18,8 +18,8 @@ public class CustomTriggerListener extends TriggerListenerSupport {
 
     @Override
     public void triggerFired(Trigger trigger, JobExecutionContext context) {
-//        logger.debug("Fired TriggerKey: {}", trigger.getKey().toString());
-//        logger.debug("NextFireTime: {} ", trigger.getNextFireTime().toString());
+        logger.debug("Fired TriggerKey: {}", trigger.getKey().toString());
+        logger.debug("NextFireTime: {} ", trigger.getNextFireTime().toString());
     }
 
     @Override

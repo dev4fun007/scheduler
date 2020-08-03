@@ -16,6 +16,7 @@ import java.sql.Date;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class APIServiceImpl implements APIService {
@@ -55,6 +56,8 @@ public class APIServiceImpl implements APIService {
     @Override
     public SchedulerWrapper createNewSchedulerWrapper(SchedulerWrapper wrapper) throws Exception {
         try {
+            //Creating custom uuid - to be used in jobDataMap for further processing
+            wrapper.setId(UUID.randomUUID().toString());
             //Add current date/time to the AddedOn field
             wrapper.setAddedOn(Date.valueOf(LocalDate.now()));
 
@@ -62,7 +65,7 @@ public class APIServiceImpl implements APIService {
             quartzSchedulerService.scheduleNewJob(wrapper);
 
             //If there was no exception - save this object
-            SchedulerWrapper response = repository.save(wrapper);
+            SchedulerWrapper response = repository.saveAndFlush(wrapper);
             logger.debug("Job with id: {} is created", response.getId());
             return response;
         } catch (SchedulerException e) {

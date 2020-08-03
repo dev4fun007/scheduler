@@ -1,7 +1,5 @@
 package bytes.sync.entity;
 
-import org.hibernate.annotations.GenericGenerator;
-
 import javax.persistence.*;
 import java.io.Serializable;
 import java.sql.Date;
@@ -14,11 +12,6 @@ public class SchedulerWrapper implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @Id
-    @GeneratedValue(generator = "UUID")
-    @GenericGenerator(
-            name = "UUID",
-            strategy = "org.hibernate.id.UUIDGenerator"
-    )
     private String id;
 
     private String jobClass;
@@ -30,7 +23,8 @@ public class SchedulerWrapper implements Serializable {
     private String addedBy;
     private Date addedOn;
     private Boolean active;
-    private String activationExpression;
+    @Embedded
+    private ActivationExpression activationExpression;
     private String rowSecurity;
 
     public String getId() {
@@ -113,11 +107,11 @@ public class SchedulerWrapper implements Serializable {
         this.active = active;
     }
 
-    public String getActivationExpression() {
+    public ActivationExpression getActivationExpression() {
         return activationExpression;
     }
 
-    public void setActivationExpression(String activationExpression) {
+    public void setActivationExpression(ActivationExpression activationExpression) {
         this.activationExpression = activationExpression;
     }
 

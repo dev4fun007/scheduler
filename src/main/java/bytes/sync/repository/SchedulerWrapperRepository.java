@@ -11,5 +11,5 @@ public interface SchedulerWrapperRepository extends JpaRepository<SchedulerWrapp
     @Override
     List<SchedulerWrapper> findAll();
     List<SchedulerWrapper> findByActiveTrue();
-    List<SchedulerWrapper> findAllByJobNameAndJobGroup(String jobName, String jobGroup);
+    List<SchedulerWrapper> findByJobGroupAndJobName(String jobGroup, String jobName);
 }

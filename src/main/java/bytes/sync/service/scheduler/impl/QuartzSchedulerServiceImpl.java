@@ -1,5 +1,6 @@
 package bytes.sync.service.scheduler.impl;
 
+import bytes.sync.common.Constants;
 import bytes.sync.entity.SchedulerWrapper;
 import bytes.sync.errors.InvalidCronExpression;
 import bytes.sync.quartzcomponents.CustomTriggerListener;
@@ -191,6 +192,15 @@ public class QuartzSchedulerServiceImpl implements GenericSchedulerService {
             jobDetailFactoryBean.setDurability(true);
             jobDetailFactoryBean.setGroup(schedulerWrapper.getJobGroup());
             jobDetailFactoryBean.setName(schedulerWrapper.getJobName());
+            jobDetailFactoryBean.setRequestsRecovery(true);
+
+            //Adding Activation Expression info in the jobDataMap
+            JobDataMap jobDataMap = new JobDataMap();
+            jobDataMap.put(Constants.SCHEDULER_WRAPPER_ID_KEY, schedulerWrapper.getId());
+            jobDataMap.put(Constants.ACTIVATION_EXPRESSION_URL_KEY, schedulerWrapper.getActivationExpression().getUrl());
+            jobDataMap.put(Constants.ACTIVATION_EXPRESSION_METHOD_KEY, schedulerWrapper.getActivationExpression().getMethod());
+            jobDataMap.put(Constants.ACTIVATION_EXPRESSION_PAYLOAD_KEY, schedulerWrapper.getActivationExpression().getPayload());
+            jobDetailFactoryBean.setJobDataMap(jobDataMap);
 
             jobDetailFactoryBean.afterPropertiesSet();
             logger.debug("jobDetailFactoryBean instantiated successfully");
@@ -211,10 +221,11 @@ public class QuartzSchedulerServiceImpl implements GenericSchedulerService {
         PersistCronTriggerFactoryBean cronTriggerFactoryBean = new PersistCronTriggerFactoryBean();
         try {
             cronTriggerFactoryBean.setJobDetail(jobDetail);
-            cronTriggerFactoryBean.setGroup(jobDetail.getKey().getGroup());
-            cronTriggerFactoryBean.setName(jobDetail.getKey().getName());
+            cronTriggerFactoryBean.setGroup("Trigger_Group_" + jobDetail.getKey().getGroup());
+            cronTriggerFactoryBean.setName("Trigger_Name_" + jobDetail.getKey().getName());
             cronTriggerFactoryBean.setMisfireInstruction(CronTrigger.MISFIRE_INSTRUCTION_FIRE_ONCE_NOW);
             cronTriggerFactoryBean.setStartTime(schedulerWrapper.getStartTime());
+            cronTriggerFactoryBean.setStartDelay(0);
 
             //Validate and then add the passed in cron expression
             if(!CronExpression.isValidExpression(schedulerWrapper.getCronExpression()))
