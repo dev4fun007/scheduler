@@ -2,6 +2,7 @@ package bytes.sync.scheduler;
 
 
 import bytes.sync.entity.ScheduledExecutionInfo;
+import bytes.sync.entity.ScheduledExecutionInfoDTO;
 import bytes.sync.service.restapi.impl.ExecutionInfoServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,9 +25,12 @@ public class SchedulerExecutionInfoAPI {
 
 
     @GetMapping(path = "/executions", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<List<ScheduledExecutionInfo>> getAllScheduledExecutionInfo() {
+    public ResponseEntity<ScheduledExecutionInfoDTO> getAllScheduledExecutionInfo() {
         List<ScheduledExecutionInfo> list = executionInfoServiceImpl.getAllScheduledExecutionInfo();
-        return ResponseEntity.ok().body(list);
+        ScheduledExecutionInfoDTO executionInfoDTO = new ScheduledExecutionInfoDTO();
+        executionInfoDTO.setCount(list.size());
+        executionInfoDTO.setScheduledExecutionInfoList(list);
+        return ResponseEntity.ok().body(executionInfoDTO);
     }
 
 
