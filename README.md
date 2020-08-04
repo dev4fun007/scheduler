@@ -64,7 +64,7 @@ This will update the triggers and job details for an existing scheduler object. 
 200 OK or DuplicateJobException/SchedulerObjectNotFoundException
 ```
 
-## Delete an existing scheuler object
+## Delete an existing scheduler object
 This will remove an existing job from Quartz and the entity from database.
 
 ### DELETE /scheduler/:Id
@@ -100,8 +100,8 @@ This will return details about the existing scheduler object whose id is passed.
 }
 ```
 
-## Fetch all the present schduler object
-This will return all the schduler object present in the database as an array.
+## Fetch all the present scheduler object
+This will return all the scheduler object present in the database as an array.
 
 ### GET /schedulers
 
@@ -152,4 +152,29 @@ Filter all the objects which are set to active
     }
   }
 ]
+```
+
+
+## Fetch all the present schedulerExecutionInfo objects
+This will return all the schedulerExecutionInfo object present in the database wrapped in a DTO with count
+and array of those objects.
+
+### GET /executions
+
+- Expected Response
+```
+200 OK
+{
+    "count": 1,
+    "scheduledExecutionInfoList": [
+        {
+            "executionId": "9c145bc1-7d4e-47d6-81da-d350ec4c030e",
+            "scheduleWrapperId": "ef9eb718-e725-4cba-b1cb-52986a4c31e3",
+            "executionTimestamp": "2020-08-04T08:10:59.754+00:00",
+            "timeToExecuteInMillis": 6855,
+            "responseHttpStatus": 200,
+            "responseMessage": "{\n  \"args\": {}, \n  \"data\": \"\", \n  \"files\": {}, \n  \"form\": {}, \n  \"headers\": {\n    \"Accept\": \"application/json\", \n    \"Host\": \"httpbin.org\", \n    \"User-Agent\": \"Java/11\", \n    \"X-Amzn-Trace-Id\": \"Root=1-5f29182b-ec842fd09724e138e3b9472c\"\n  }, \n  \"json\": null, \n  \"method\": \"GET\", \n  \"origin\": \"103.251.55.248\", \n  \"url\": \"http://httpbin.org/anything\"\n}\n"
+        }
+    ]
+}
 ```
