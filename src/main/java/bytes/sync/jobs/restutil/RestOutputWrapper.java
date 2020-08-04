@@ -7,14 +7,14 @@ public class RestOutputWrapper {
 
     private String responseMessage;
     private Integer httpStatus;
-    private Long timeToExecute;
+    private Long timeToExecuteInMillis;
 
-    public Long getTimeToExecute() {
-        return timeToExecute;
+    public Long getTimeToExecuteInMillis() {
+        return timeToExecuteInMillis;
     }
 
-    public void setTimeToExecute(Long timeToExecute) {
-        this.timeToExecute = timeToExecute;
+    public void setTimeToExecuteInMillis(Long timeToExecuteInMillis) {
+        this.timeToExecuteInMillis = timeToExecuteInMillis;
     }
 
     public String getResponseMessage() {
@@ -35,6 +35,6 @@ public class RestOutputWrapper {
 
     @Override
     public String toString() {
-        return "Status: " + httpStatus + ", TimeTakenToExecute: " + timeToExecute + "ms, ResponseMessage: " + responseMessage;
+        return "Status: " + httpStatus + ", TimeTakenToExecute: " + timeToExecuteInMillis + "ms, ResponseMessage: " + responseMessage;
     }
 }

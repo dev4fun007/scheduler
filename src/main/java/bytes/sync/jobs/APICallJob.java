@@ -12,6 +12,7 @@ import org.quartz.impl.matchers.GroupMatcher;
 import org.quartz.impl.matchers.KeyMatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 import org.springframework.stereotype.Component;
@@ -32,6 +33,9 @@ public class APICallJob extends QuartzJobBean {
 
     private final Logger logger = LoggerFactory.getLogger(APICallJob.class);
 
+    @Autowired
+    JobPostProcessor jobPostProcessor;
+
     @Override
     protected void executeInternal(JobExecutionContext jobExecutionContext) throws JobExecutionException {
         logger.info("Cron-Scheduled APICallJob Starting");
@@ -47,8 +51,7 @@ public class APICallJob extends QuartzJobBean {
         RestOutputWrapper restOutputWrapper = apiCallHelper.executeRestCall();
 
         //Doing the post-process database entry
-        JobPostProcessor jobPostProcessor = new JobPostProcessor();
-        jobPostProcessor.process(schedulerWrapperId, jobExecutionContext.getJobDetail(), restOutputWrapper);
+        jobPostProcessor.process(schedulerWrapperId, restOutputWrapper);
 
         logger.info("Cron-Scheduled APICallJob Executed");
     }

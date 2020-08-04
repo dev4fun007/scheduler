@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -36,7 +37,7 @@ public class APICallHelper {
         if(responseEntity != null) {
             String resBody = responseEntity.getBody() != null ? responseEntity.getBody().toString() : "";
             outputWrapper.setResponseMessage(resBody);
-            outputWrapper.setTimeToExecute(timeToExecuteInMillis);
+            outputWrapper.setTimeToExecuteInMillis(timeToExecuteInMillis);
             outputWrapper.setHttpStatus(responseEntity.getStatusCodeValue());
             logger.debug("Response from APICall, Status: {}, Body: {}", responseEntity.getStatusCode(), resBody);
         } else {
@@ -57,6 +58,9 @@ public class APICallHelper {
         } catch (URISyntaxException e){
             logger.error("error parsing url: {}", e.getMessage());
             return null;
+        } catch (ResourceAccessException e) {
+            logger.error("error accessing resource: {}", e.getMessage());
+            return null;
         }
     }
 
@@ -70,6 +74,9 @@ public class APICallHelper {
             return restTemplate.exchange(requestEntity, String.class);
         } catch (URISyntaxException e){
             logger.error("error parsing url: {}", e.getMessage());
+            return null;
+        } catch (ResourceAccessException e) {
+            logger.error("error accessing resource: {}", e.getMessage());
             return null;
         }
     }
@@ -85,6 +92,9 @@ public class APICallHelper {
         } catch (URISyntaxException e){
             logger.error("error parsing url: {}", e.getMessage());
             return null;
+        } catch (ResourceAccessException e) {
+            logger.error("error accessing resource: {}", e.getMessage());
+            return null;
         }
     }
 
@@ -97,6 +107,9 @@ public class APICallHelper {
             return restTemplate.exchange(requestEntity, String.class);
         } catch (URISyntaxException e){
             logger.error("error parsing url: {}", e.getMessage());
+            return null;
+        } catch (ResourceAccessException e) {
+            logger.error("error accessing resource: {}", e.getMessage());
             return null;
         }
     }

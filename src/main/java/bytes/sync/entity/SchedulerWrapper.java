@@ -1,5 +1,6 @@
 package bytes.sync.entity;
 
+
 import javax.persistence.*;
 import java.io.Serializable;
 import java.sql.Date;

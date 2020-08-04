@@ -1,5 +1,6 @@
 package bytes.sync.service.restapi.contract;
 
+import bytes.sync.entity.ScheduledExecutionInfo;
 import bytes.sync.entity.SchedulerWrapper;
 
 import java.util.List;
